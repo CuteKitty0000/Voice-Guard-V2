@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='UTF-8'/>
+<meta name='viewport' content='width=device-width,initial-scale=1'/>
+<title>VoiceGuard - AI Voice Integrity System</title>
+<style>
+:root{--bg:#070c14;--bg2:#0d1421;--card:#111827;--border:#1f2937;--border2:#374151;--text:#f1f5f9;--t2:#94a3b8;--t3:#475569;--blue:#3b82f6;--purple:#8b5cf6;--green:#22c55e;--yellow:#f59e0b;--red:#ef4444;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;min-height:100vh;display:flex;flex-direction:column;}
+header{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;gap:16px;height:54px;flex-shrink:0;}
+.logo{display:flex;align-items:center;gap:10px;font-size:1.1rem;font-weight:700;}
+.logo-sub{font-size:.6rem;color:var(--t3);font-weight:400;display:block;line-height:1;}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:blink 2s infinite;display:inline-block;margin-right:5px;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.sys-status{display:flex;align-items:center;font-size:.75rem;color:var(--green);}
+nav{margin-left:auto;display:flex;gap:4px;}
+.tab-btn{padding:6px 14px;border-radius:6px;border:1px solid transparent;background:transparent;color:var(--t2);cursor:pointer;font-size:.8rem;font-weight:500;transition:all .15s;}
+.tab-btn:hover{background:#1f2937;color:var(--text);}
+.tab-btn.active{background:var(--blue);color:#fff;}
+main{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+.tab-panel{display:none;flex:1;flex-direction:column;overflow:hidden;}
+.tab-panel.active{display:flex;}
+.stats-bar{background:var(--bg2);border-bottom:1px solid var(--border);padding:8px 24px;display:flex;gap:28px;align-items:center;flex-shrink:0;}
+.st{display:flex;flex-direction:column;align-items:center;}
+.st-v{font-size:1.15rem;font-weight:700;}
+.st-v.r{color:var(--red)}.st-v.y{color:var(--yellow)}.st-v.g{color:var(--green)}
+.st-l{font-size:.62rem;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;}
+.sess{margin-left:auto;font-size:.75rem;color:var(--t3);}
+.dashboard{display:grid;grid-template-columns:230px 1fr 255px;flex:1;overflow:hidden;}
+.panel{border-right:1px solid var(--border);overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;}
+.panel:last-child{border-right:none;}
+.ptitle{font-size:.63rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:1px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.caller-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;}
+.caller-av{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin:0 auto 8px;}
+.caller-name{font-weight:600;font-size:.9rem;}
+.caller-num{color:var(--t3);font-size:.75rem;margin-top:2px;}
+.caller-role{margin-top:6px;font-size:.68rem;color:var(--blue);background:rgba(59,130,246,.1);border-radius:999px;padding:3px 10px;display:inline-block;}
+.irow{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--card);border:1px solid var(--border);border-radius:7px;}
+.irow .lbl{color:var(--t3);font-size:.72rem;}.irow .val{font-weight:600;font-size:.8rem;}.irow .val.danger{color:var(--red);}
+.timer-box{text-align:center;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:7px;}
+.timer-v{font-size:1.5rem;font-weight:700;font-family:monospace;color:var(--blue);}
+.timer-l{font-size:.62rem;color:var(--t3);text-transform:uppercase;}
+.id-card{background:var(--card);border:1px solid var(--border);border-radius:7px;padding:10px;}
+.id-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;}
+.id-hdr span{font-size:.7rem;color:var(--t3);}
+.vp-badge{font-size:.62rem;padding:2px 8px;border-radius:999px;font-weight:600;}
+.vp-badge.enrolled{background:rgba(34,197,94,.15);color:var(--green);}
+.vp-badge.none{background:rgba(148,163,184,.12);color:var(--t3);}
+.id-bar-track{height:5px;background:#1f2937;border-radius:999px;overflow:hidden;}
+.id-bar-fill{height:100%;border-radius:999px;background:var(--green);transition:width .5s ease;}
+.id-score{font-size:.7rem;color:var(--t2);margin-top:4px;text-align:right;}
+.cbtns{display:flex;flex-direction:column;gap:7px;}
+.btn{padding:9px;border-radius:7px;border:none;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .15s;width:100%;}
+.btn-go{background:var(--green);color:#000;}.btn-go:hover{opacity:.85;}.btn-go.end{background:var(--red);color:#fff;}
+.btn-sec{background:var(--card);border:1px solid var(--border2);color:var(--text);}
+.btn-sec:hover{border-color:var(--blue);color:var(--blue);}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+select{width:100%;padding:7px 10px;background:#1f2937;border:1px solid var(--border2);border-radius:6px;color:var(--text);font-size:.8rem;}
+.risk-center{padding:18px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;}
+.gauge-row{display:flex;align-items:center;justify-content:center;gap:28px;flex-wrap:wrap;}
+.gauge-wrap{position:relative;width:170px;height:170px;display:flex;align-items:center;justify-content:center;}
+.gauge-svg{width:100%;height:100%;transform:rotate(-90deg);}
+.g-track{fill:none;stroke:#1f2937;stroke-width:13;}
+.g-fill{fill:none;stroke:var(--green);stroke-width:13;stroke-linecap:round;stroke-dasharray:440;stroke-dashoffset:440;transition:stroke-dashoffset .6s ease,stroke .3s;}
+.gauge-inner{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.g-num{font-size:2rem;font-weight:800;line-height:1;}
+.g-lbl{font-size:.65rem;color:var(--t3);margin-top:2px;}
+.g-verdict{font-size:.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-top:3px;color:var(--t3);}
+.risk-right{display:flex;flex-direction:column;gap:10px;align-items:center;}
+.risk-badge{padding:8px 18px;border-radius:8px;font-size:.82rem;font-weight:700;letter-spacing:.8px;text-align:center;min-width:165px;}
+.risk-badge.LOW{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.3);}
+.risk-badge.MEDIUM{background:rgba(245,158,11,.12);color:var(--yellow);border:1px solid rgba(245,158,11,.3);}
+.risk-badge.HIGH{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.3);animation:flash 1s infinite;}
+.risk-badge.WAIT{background:#1f2937;color:var(--t3);border:1px solid var(--border);}
+@keyframes flash{0%,100%{opacity:1}50%{opacity:.55}}
+.dual{display:flex;gap:10px;}
+.score-pill{flex:1;padding:9px;border-radius:7px;background:var(--card);border:1px solid var(--border);text-align:center;}
+.score-pill .v{font-size:1.4rem;font-weight:700;}.score-pill .l{font-size:.62rem;color:var(--t3);text-transform:uppercase;}
+.score-pill.human .v{color:var(--green);}.score-pill.ai .v{color:var(--red);}
+.chart-box{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;}
+.chart-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.chart-title{font-size:.72rem;font-weight:600;color:var(--t2);}
+.chart-legend{display:flex;gap:10px;font-size:.65rem;color:var(--t3);}
+.leg-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:3px;}
+#riskChart{max-height:180px;}
+.thresh-box{background:var(--card);border:1px solid var(--border);border-radius:7px;padding:10px;}
+.thresh-hdr{display:flex;justify-content:space-between;margin-bottom:7px;font-size:.72rem;}
+.thresh-hdr .tl{color:var(--t3);}.thresh-hdr .tv{color:var(--red);font-weight:600;}
+#thr{width:100%;appearance:none;height:4px;background:linear-gradient(to right,var(--green) 0%,var(--yellow) 50%,var(--red) 100%);border-radius:2px;cursor:pointer;outline:none;}
+#thr::-webkit-slider-thumb{appearance:none;width:15px;height:15px;border-radius:50%;background:#fff;border:2px solid var(--red);cursor:pointer;}
+.thresh-hints{display:flex;justify-content:space-between;font-size:.62rem;color:var(--t3);margin-top:3px;}
+.alert-log{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:5px;}
+.log-e{padding:7px 9px;border-radius:5px;border-left:3px solid;font-size:.72rem;background:var(--card);}
+.log-e.HIGH{border-color:var(--red);background:rgba(239,68,68,.04);}
+.log-e.MEDIUM{border-color:var(--yellow);background:rgba(245,158,11,.04);}
+.log-e.LOW{border-color:var(--green);background:rgba(34,197,94,.04);}
+.log-e.INFO{border-color:var(--blue);background:rgba(59,130,246,.04);}
+.log-t{color:var(--t3);font-family:monospace;font-size:.65rem;}
+.log-m{color:var(--t2);margin-top:2px;}
+.ast{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;background:var(--card);border:1px solid var(--border);border-radius:7px;padding:9px;}
+.as{text-align:center;}.as .n{font-size:1.1rem;font-weight:700;}
+.as .n.r{color:var(--red)}.as .n.y{color:var(--yellow)}.as .n.g{color:var(--green)}
+.as .t{font-size:.6rem;color:var(--t3);text-transform:uppercase;}
+#risk-banner{display:none;background:linear-gradient(135deg,rgba(239,68,68,.96),rgba(185,28,28,.96));border-top:2px solid var(--red);padding:11px 22px;align-items:center;gap:14px;flex-shrink:0;}
+.ban-icon{font-size:1.4rem;animation:shake .5s infinite;}
+@keyframes shake{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+.ban-txt h3{font-size:.88rem;font-weight:700;}.ban-txt p{font-size:.75rem;opacity:.85;}
+.ban-acts{margin-left:auto;display:flex;gap:8px;}
+.btn-block{padding:6px 14px;border-radius:6px;background:#fff;color:var(--red);border:none;font-weight:700;font-size:.78rem;cursor:pointer;}
+.btn-dis{padding:6px 14px;border-radius:6px;background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);font-size:.78rem;cursor:pointer;}
+#risk-overlay{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;}
+#risk-overlay.hidden{display:none;}
+.ov-box{background:#0f1320;border:2px solid var(--red);border-radius:14px;padding:36px;max-width:460px;text-align:center;animation:ovIn .3s ease;}
+@keyframes ovIn{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
+.ov-icon{font-size:3rem;margin-bottom:14px;}
+.ov-title{font-size:1.4rem;font-weight:800;color:var(--red);margin-bottom:7px;}
+.ov-sub{color:var(--t2);font-size:.87rem;line-height:1.65;margin-bottom:22px;}
+.ov-acts{display:flex;gap:10px;justify-content:center;}
+.btn-ov-block{padding:11px 26px;border-radius:7px;background:var(--red);color:#fff;border:none;font-weight:700;font-size:.88rem;cursor:pointer;}
+.btn-ov-fp{padding:11px 26px;border-radius:7px;background:transparent;color:var(--t2);border:1px solid var(--border2);font-size:.88rem;cursor:pointer;}
+#enroll-overlay{position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;}
+#enroll-overlay.hidden{display:none;}
+.en-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:28px;text-align:center;max-width:340px;}
+.en-icon{font-size:2.2rem;margin-bottom:10px;}
+.en-title{font-size:1rem;font-weight:700;margin-bottom:7px;}
+.en-sub{color:var(--t2);font-size:.82rem;margin-bottom:18px;}
+.en-prog-track{height:7px;background:#1f2937;border-radius:999px;overflow:hidden;margin-bottom:12px;}
+.en-prog-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--purple));border-radius:999px;width:0%;transition:width .1s linear;}
+.en-status{font-size:.78rem;color:var(--t3);}
+#tab-file{padding:28px;overflow-y:auto;}
+.fc{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:680px;}
+.fc h2{font-size:1rem;font-weight:700;margin-bottom:5px;}.fc p{color:var(--t3);font-size:.82rem;margin-bottom:18px;}
+#drop-zone{border:2px dashed var(--border2);border-radius:9px;padding:44px 22px;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
+#drop-zone.dov{border-color:var(--blue);background:rgba(59,130,246,.05);}
+#drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+#drop-zone h3{font-size:.95rem;color:var(--t2);}#drop-zone p{font-size:.78rem;color:var(--t3);margin-top:4px;}
+#file-list{margin-top:14px;display:flex;flex-direction:column;gap:5px;}
+.fchip{display:flex;align-items:center;gap:9px;background:#1f2937;border-radius:5px;padding:7px 11px;font-size:.8rem;color:var(--t2);}
+.fchip .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.fchip .rm{cursor:pointer;color:var(--t3);}.fchip .rm:hover{color:var(--red);}
+#upload-btn{margin-top:14px;width:100%;padding:11px;background:linear-gradient(135deg,var(--blue),var(--purple));border:none;border-radius:7px;color:#fff;font-size:.88rem;font-weight:600;cursor:pointer;}
+#upload-btn:disabled{opacity:.4;cursor:not-allowed;}
+#file-results{margin-top:20px;display:flex;flex-direction:column;gap:12px;}
+.fres{background:#1f2937;border-left:4px solid;border-radius:0 9px 9px 0;padding:14px;}
+.fres.human{border-color:var(--green);}.fres.ai{border-color:var(--red);}
+.fres-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.fres-name{font-weight:600;font-size:.85rem;}
+.fvb{padding:3px 11px;border-radius:999px;font-size:.75rem;font-weight:700;}
+.fvb.human{background:rgba(34,197,94,.15);color:var(--green);}.fvb.ai{background:rgba(239,68,68,.15);color:var(--red);}
+.fbar-r label{display:flex;justify-content:space-between;font-size:.72rem;color:var(--t3);margin-bottom:4px;}
+.fbar-r label span{color:var(--t2);font-weight:600;}
+.btrack{height:6px;background:#374151;border-radius:999px;overflow:hidden;}
+.bfill{height:100%;border-radius:999px;transition:width .8s ease;}
+.bfill.human{background:linear-gradient(90deg,#16a34a,var(--green));}
+.bfill.ai{background:linear-gradient(90deg,#b91c1c,var(--red));}
+.fwarn{margin-top:8px;padding:7px 11px;background:rgba(245,158,11,.1);border-radius:5px;font-size:.75rem;color:var(--yellow);}
+#tab-api{padding:28px;overflow-y:auto;}
+.api-wrap{max-width:780px;}
+.api-sec{margin-bottom:28px;}
+.api-sec h2{font-size:1rem;font-weight:700;margin-bottom:4px;}.api-sec > p{color:var(--t3);font-size:.82rem;margin-bottom:14px;}
+.ep-card{background:var(--card);border:1px solid var(--border);border-radius:9px;overflow:hidden;margin-bottom:10px;}
+.ep-hdr{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);}
+.mth{padding:2px 9px;border-radius:4px;font-size:.68rem;font-weight:700;font-family:monospace;}
+.mth.POST{background:rgba(59,130,246,.2);color:var(--blue);}.mth.GET{background:rgba(34,197,94,.2);color:var(--green);}.mth.WS{background:rgba(139,92,246,.2);color:var(--purple);}
+.ep-path{font-family:monospace;font-size:.83rem;}
+.ep-desc{color:var(--t3);font-size:.78rem;padding:8px 14px;}
+pre{background:#0d1421;border:1px solid var(--border);border-radius:7px;padding:12px;font-size:.75rem;color:#a5f3fc;overflow-x:auto;line-height:1.6;margin:0 14px 14px;}
+::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><span style="font-size:1.4rem">&#x1F6E1;&#xFE0F;</span><div>VoiceGuard<span class="logo-sub">AI Voice Integrity System v1.0</span></div></div>
+  <div class="sys-status"><span class="live-dot"></span>SYSTEM ONLINE</div>
+  <nav>
+    <button class="tab-btn active" onclick="switchTab(this,'monitor')">&#x1F4E1; Live Monitor</button>
+    <button class="tab-btn" onclick="switchTab(this,'file')">&#x1F4C1; File Analysis</button>
+    <button class="tab-btn" onclick="switchTab(this,'api')">&#x1F4D6; API Reference</button>
+  </nav>
+</header>
+<main>
+<!-- TAB: LIVE MONITOR -->
+<div class="tab-panel active" id="tab-monitor">
+  <div class="stats-bar">
+    <div class="st"><div class="st-v" id="s-total">0</div><div class="st-l">Analyses</div></div>
+    <div class="st"><div class="st-v r" id="s-high">0</div><div class="st-l">High Risk</div></div>
+    <div class="st"><div class="st-v y" id="s-med">0</div><div class="st-l">Medium</div></div>
+    <div class="st"><div class="st-v g" id="s-low">0</div><div class="st-l">Low Risk</div></div>
+    <div class="st"><div class="st-v" id="s-last">&#x2014;</div><div class="st-l">Last Verdict</div></div>
+    <div class="sess" id="sess-info">Session not started</div>
+  </div>
+  <div class="dashboard">
+    <div class="panel">
+      <div class="ptitle">&#x1F4DE; Call Simulation</div>
+      <div class="caller-card">
+        <div class="caller-av">&#x1F464;</div>
+        <div class="caller-name" id="c-name">Rajesh Kumar</div>
+        <div class="caller-num" id="c-num">+91-98765-43210</div>
+        <div class="caller-role" id="c-role">Chief Executive Officer</div>
+      </div>
+      <select id="caller-sel" onchange="changeCaller(this.value)">
+        <option value="0">Rajesh Kumar (CEO)</option>
+        <option value="1">Priya Sharma (CFO)</option>
+        <option value="2">Anonymous Caller</option>
+      </select>
+      <div class="irow"><span class="lbl">&#x1F4B0; Transaction</span><span class="val danger">&#x20B9;5,00,000</span></div>
+      <div class="irow"><span class="lbl">&#x1F3E6; Purpose</span><span class="val">Wire Transfer</span></div>
+      <div class="irow"><span class="lbl">&#x1F4CD; Origin</span><span class="val">VoIP / Unknown</span></div>
+      <div class="timer-box"><div class="timer-v" id="c-timer">00:00</div><div class="timer-l">Call Duration</div></div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:7px;padding:10px;">
+        <div style="font-size:.65rem;color:var(--t3);margin-bottom:5px;">&#x1F3A4; Mic Input Level</div>
+        <div style="height:8px;background:#1f2937;border-radius:999px;overflow:hidden;">
+          <div id="mic-level" style="height:100%;width:0%;border-radius:999px;background:var(--green);transition:width .08s;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:.62rem;color:var(--t3);margin-top:4px;">
+          <span id="mic-db">No signal</span>
+          <span id="mic-status" style="color:var(--t3);">&#x23F8;&#xFE0F; Idle</span>
+        </div>
+      </div>
+      <div class="id-card">
+        <div class="id-hdr"><span>&#x1F3A4; Voiceprint</span><span class="vp-badge none" id="vp-badge">Not Enrolled</span></div>
+        <div class="id-bar-track"><div class="id-bar-fill" id="id-fill" style="width:0%"></div></div>
+        <div class="id-score" id="id-score">Identity Match: &#x2014;</div>
+      </div>
+      <div class="cbtns">
+        <button class="btn btn-go" id="call-btn" onclick="toggleCall()">&#x1F4DE; Live Microphone</button>
+        <button class="btn btn-sec" onclick="startEnroll()">&#x1F3A4; Enroll Voiceprint</button>
+        <div style="font-size:0.65rem; color:var(--t3); margin-top:5px; text-align:center;">SIMULATE DIRECT VOIP ATTACK</div>
+        <div style="display:flex; gap:5px;">
+          <button class="btn btn-sec" style="font-size:0.7rem; border-color:var(--red); color:var(--red);" onclick="simulateCall('ai')">&#x1F916; Inject AI</button>
+          <button class="btn btn-sec" style="font-size:0.7rem; border-color:var(--green); color:var(--green);" onclick="simulateCall('human')">&#x1F9D1; Inject Human</button>
+        </div>
+      </div>
+    </div>
+    <div class="risk-center">
+      <div class="gauge-row">
+        <div class="gauge-wrap">
+          <svg class="gauge-svg" viewBox="0 0 180 180">
+            <circle class="g-track" cx="90" cy="90" r="70"/>
+            <circle class="g-fill" cx="90" cy="90" r="70" id="g-arc"/>
+          </svg>
+          <div class="gauge-inner"><div class="g-num" id="g-num">&#x2014;</div><div class="g-lbl">AI RISK</div><div class="g-verdict" id="g-verdict">WAITING</div></div>
+        </div>
+        <div class="risk-right">
+          <div class="risk-badge WAIT" id="risk-badge">&#x23F3; WAITING FOR CALL</div>
+          <div class="dual">
+            <div class="score-pill human"><div class="v" id="sc-human">&#x2014;</div><div class="l">&#x1F9D1; Human</div></div>
+            <div class="score-pill ai"><div class="v" id="sc-ai">&#x2014;</div><div class="l">&#x1F916; AI Gen</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-hdr"><div class="chart-title">&#x1F4C8; Real-Time Risk Score History</div><div class="chart-legend"><span><span class="leg-dot" style="background:#ef4444"></span>AI Risk</span><span><span class="leg-dot" style="background:rgba(239,68,68,.3)"></span>Threshold</span></div></div>
+        <canvas id="riskChart"></canvas>
+      </div>
+      <div class="thresh-box">
+        <div class="thresh-hdr"><span class="tl">&#x1F3DA;&#xFE0F; Alert Threshold</span><span class="tv" id="thr-val">70%</span></div>
+        <input type="range" id="thr" min="30" max="90" value="70" oninput="setThr(this.value)"/>
+        <div class="thresh-hints"><span>Strict (30%)</span><span>Lenient (90%)</span></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="ptitle">&#x1F514; Event Log</div>
+      <div class="ast">
+        <div class="as"><div class="n r" id="l-h">0</div><div class="t">High</div></div>
+        <div class="as"><div class="n y" id="l-m">0</div><div class="t">Medium</div></div>
+        <div class="as"><div class="n g" id="l-l">0</div><div class="t">Low</div></div>
+      </div>
+      <div class="alert-log" id="alert-log"><div class="log-e INFO"><div class="log-t">System</div><div class="log-m">VoiceGuard initialized. Start a call to begin monitoring.</div></div></div>
+      <button class="btn btn-sec" onclick="clearLog()" style="margin-top:auto">&#x1F5D1;&#xFE0F; Clear Log</button>
+    </div>
+  </div>
+  <div id="risk-banner" style="display:none;background:linear-gradient(135deg,rgba(239,68,68,.96),rgba(185,28,28,.96));border-top:2px solid #ef4444;padding:11px 22px;align-items:center;gap:14px;flex-shrink:0;">
+    <div class="ban-icon">&#x1F6A8;</div>
+    <div class="ban-txt"><h3>HIGH IMPERSONATION RISK DETECTED</h3><p id="ban-msg">Synthetic voice characteristics detected in live call</p></div>
+    <div class="ban-acts"><button class="btn-block" onclick="blockTx()">&#x1F6AB; Block Transaction</button><button class="btn-dis" onclick="dismissBan()">Dismiss</button></div>
+  </div>
+</div>
+<!-- TAB: FILE -->
+<div class="tab-panel" id="tab-file">
+<div style="padding:28px;overflow-y:auto;flex:1">
+<div class="fc"><h2>&#x1F4C1; Audio File Analysis</h2>
+<p>Upload audio clips to detect AI-generated or cloned voices. Supports FLAC, WAV, M4A, MP3, AAC, OGG.</p>
+<div id="drop-zone"><input type="file" id="file-input" accept=".flac,.wav,.m4a,.mp4,.aac,.mp3,.ogg" multiple/><div style="font-size:2.2rem;margin-bottom:8px">&#x1F3B5;</div><h3>Drag and drop audio files here</h3><p>or click to browse</p></div>
+<div id="file-list"></div>
+<button id="upload-btn" disabled onclick="doUpload()">&#x1F50D; Analyze Files</button>
+<div id="file-results"></div></div></div></div>
+<!-- TAB: API -->
+<div class="tab-panel" id="tab-api"><div style="padding:28px;overflow-y:auto;flex:1"><div class="api-wrap">
+<h1 style="font-size:1.4rem;margin-bottom:4px">VoiceGuard API Reference</h1>
+<p style="color:var(--t3);margin-bottom:28px;font-size:.85rem">Integration-ready REST and WebSocket APIs for enterprise voice integrity verification</p>
+<div class="api-sec"><h2>REST Endpoints</h2><p>Standard HTTP for batch audio file analysis</p>
+<div class="ep-card"><div class="ep-hdr"><span class="mth POST">POST</span><span class="ep-path">/predict</span></div>
+<div class="ep-desc">Analyze audio files. Returns AI risk score and verdict for each file.</div>
+<pre>curl -X POST http://localhost:5000/predict -F "audio=@call.flac"
+# Response: {"results":[{"ai_pct":98.2,"verdict":"AI","risk_level":"HIGH"}]}</pre></div></div>
+<div class="api-sec"><h2>WebSocket Events</h2><p>Real-time bidirectional communication for live call monitoring</p>
+<div class="ep-card"><div class="ep-hdr"><span class="mth WS">EMIT</span><span class="ep-path">audio_chunk</span></div>
+<div class="ep-desc">Send a 3s audio buffer for real-time analysis. Responds with risk_update.</div>
+<pre>const socket = io();
+socket.emit("audio_chunk", audioArrayBuffer);
+socket.on("risk_update", d => console.log(d.risk_level, d.ai_pct+"%"));</pre></div>
+<div class="ep-card"><div class="ep-hdr"><span class="mth WS">EMIT</span><span class="ep-path">enroll_voiceprint</span></div>
+<div class="ep-desc">Enroll trusted voiceprint for cross-session identity verification.</div>
+<pre>socket.emit("enroll_voiceprint", audioArrayBuffer);
+socket.on("enrollment_done", d => console.log(d.status));</pre></div></div>
+<div class="api-sec"><h2>Response Schema</h2>
+<pre>{"ai_pct":number, "human_pct":number, "verdict":"Human|AI",
+ "risk_level":"LOW|MEDIUM|HIGH", "identity_score":number,
+ "low_confidence":boolean, "warnings":string[]}</pre></div>
+</div></div></div>
+</main>
+<div id="risk-overlay" class="hidden"><div class="ov-box">
+  <div class="ov-icon">&#x1F6A8;</div>
+  <div class="ov-title">IMPERSONATION DETECTED</div>
+  <div class="ov-sub">The system detected <strong>3 consecutive HIGH-risk readings</strong>.<br/>Voice cloning probability exceeds threshold.<br/><br/><strong style="color:#ef4444">DO NOT authorize any financial transactions.</strong></div>
+  <div class="ov-acts"><button class="btn-ov-block" onclick="blockTx()">&#x1F6AB; Block Transaction</button><button class="btn-ov-fp" onclick="dismissOv()">False Positive &#x2014; Continue</button></div>
+</div></div>
+<div id="enroll-overlay" class="hidden"><div class="en-box">
+  <div class="en-icon">&#x1F3A4;</div><div class="en-title">Enrolling Voiceprint</div>
+  <div class="en-sub">Speak clearly for 4 seconds to register your trusted voiceprint.</div>
+  <div class="en-prog-track"><div class="en-prog-fill" id="en-prog"></div></div>
+  <div class="en-status" id="en-status">Recording... 4s remaining</div>
+</div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const socket=io();
+let audioCtx=null,analyser=null,micRafId=null;
+function startMicMeter(stream){
+  try{
+    if(!audioCtx || audioCtx.state === 'closed') audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    if(analyser) { try{ analyser.disconnect(); }catch(e){} }
+    analyser=audioCtx.createAnalyser();analyser.fftSize=512;
+    const src=audioCtx.createMediaStreamSource(stream);src.connect(analyser);
+    const buf=new Uint8Array(analyser.fftSize);
+    function tick(){
+      if(!callActive){document.getElementById("mic-level").style.width="0%";document.getElementById("mic-db").textContent="No signal";document.getElementById("mic-status").textContent="Idle";return;}
+      analyser.getByteTimeDomainData(buf);
+      let sum=0;for(let i=0;i<buf.length;i++){const v=(buf[i]-128)/128;sum+=v*v;}
+      const rms=Math.sqrt(sum/buf.length);
+      const db=rms>0.0001?Math.round(20*Math.log10(rms)):-80;
+      const pct=Math.max(0,Math.min(100,(db+60)/55*100));
+      const bar=document.getElementById("mic-level");
+      bar.style.width=pct+"%";
+      bar.style.background=pct>15?"#22c55e":pct>5?"#f59e0b":"#ef4444";
+      document.getElementById("mic-db").textContent=db+" dB";
+      document.getElementById("mic-status").innerHTML=pct>10?"<span style=\"color:#22c55e\">&#x1F7E2; Active</span>":"<span style=\"color:#ef4444\">&#x1F534; Too Quiet</span>";
+      micRafId=requestAnimationFrame(tick);
+    }
+    tick();
+  }catch(e){console.warn("Web Audio:",e);}
+}
+function stopMicMeter(){
+  if(micRafId){cancelAnimationFrame(micRafId);micRafId=null;}
+  if(audioCtx){audioCtx.close().catch(()=>{});audioCtx=null;}
+  document.getElementById("mic-level").style.width="0%";
+  document.getElementById("mic-db").textContent="No signal";
+  document.getElementById("mic-status").textContent="Idle";
+}
+let callActive=false,micStream=null,callTimer=null,callSecs=0,thr=70,streak=0;
+const counts={total:0,HIGH:0,MEDIUM:0,LOW:0};
+const callers=[{name:"Rajesh Kumar",num:"+91-98765-43210",role:"Chief Executive Officer"},{name:"Priya Sharma",num:"+91-87654-32109",role:"Chief Financial Officer"},{name:"Anonymous Caller",num:"+91-?????-?????",role:"Unverified Origin"}];
+function switchTab(btn,id){document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));document.getElementById("tab-"+id).classList.add("active");btn.classList.add("active");}
+function changeCaller(v){const c=callers[v];document.getElementById("c-name").textContent=c.name;document.getElementById("c-num").textContent=c.num;document.getElementById("c-role").textContent=c.role;}
+const MAX_PTS=25;
+const cd={labels:[],datasets:[{label:"AI Risk %",data:[],borderColor:"#ef4444",backgroundColor:"transparent",borderWidth:2.5,pointRadius:3,pointBackgroundColor:"#ef4444",tension:.4}]};
+const rc=new Chart(document.getElementById("riskChart"),{type:"line",data:cd,
+  options:{responsive:true,maintainAspectRatio:false,animation:{duration:400},
+    scales:{y:{min:0,max:100,grid:{color:"rgba(255,255,255,.04)"},ticks:{color:"#475569",callback:v=>v+"%"}},
+            x:{grid:{color:"rgba(255,255,255,.04)"},ticks:{color:"#475569",maxRotation:0,maxTicksLimit:6}}},
+    plugins:{legend:{display:false}}},
+  plugins:[{id:"zones",beforeDraw(c){
+    if(!c.chartArea)return;
+    const{ctx,chartArea:{top,bottom,left,right},scales:{y}}=c;
+    const tl=y.getPixelForValue(thr);
+    ctx.fillStyle="rgba(34,197,94,.04)";ctx.fillRect(left,y.getPixelForValue(40),right-left,bottom-y.getPixelForValue(40));
+    ctx.fillStyle="rgba(245,158,11,.04)";ctx.fillRect(left,tl,right-left,y.getPixelForValue(40)-tl);
+    ctx.fillStyle="rgba(239,68,68,.06)";ctx.fillRect(left,top,right-left,tl-top);
+    ctx.save();ctx.strokeStyle="rgba(239,68,68,.5)";ctx.lineWidth=1;ctx.setLineDash([6,4]);
+    ctx.beginPath();ctx.moveTo(left,tl);ctx.lineTo(right,tl);ctx.stroke();ctx.restore();
+  }}]
+});
+function addPt(ai){const now=new Date();
+  const lbl=now.toLocaleTimeString("en-IN",{hour12:false,hour:"2-digit",minute:"2-digit",second:"2-digit"});
+  cd.labels.push(lbl);cd.datasets[0].data.push(ai);
+  if(cd.labels.length>MAX_PTS){cd.labels.shift();cd.datasets[0].data.shift();}
+  rc.update();}
+function updateGauge(ai,verdict,rl){
+  const circ=440,off=circ-(ai/100)*circ;
+  const arc=document.getElementById("g-arc");
+  arc.style.strokeDasharray=circ;arc.style.strokeDashoffset=off;
+  arc.style.stroke=rl==="HIGH"?"#ef4444":rl==="MEDIUM"?"#f59e0b":"#22c55e";
+  document.getElementById("g-num").textContent=ai+"%";
+  document.getElementById("g-verdict").textContent=verdict.toUpperCase();
+  document.getElementById("g-verdict").style.color=rl==="HIGH"?"#ef4444":rl==="MEDIUM"?"#f59e0b":"#22c55e";
+  document.getElementById("sc-human").textContent=(100-ai)+"%";
+  document.getElementById("sc-ai").textContent=ai+"%";}
+function updateBadge(rl){
+  const b=document.getElementById("risk-badge");b.className="risk-badge "+rl;
+  const t={HIGH:"&#x1F534; HIGH RISK",MEDIUM:"&#x1F7E1; MEDIUM RISK",LOW:"&#x1F7E2; LOW RISK"};
+  b.innerHTML=t[rl]||"&#x23F3; WAITING";}
+function addLog(lv,msg){
+  const lg=document.getElementById("alert-log");
+  const d=document.createElement("div");d.className="log-e "+lv;
+  const ts=new Date().toLocaleTimeString("en-IN",{hour12:false});
+  d.innerHTML="<div class=\"log-t\">"+ts+"</div><div class=\"log-m\">"+msg+"</div>";
+  lg.insertBefore(d,lg.firstChild);if(lg.children.length>60)lg.removeChild(lg.lastChild);}
+function clearLog(){document.getElementById("alert-log").innerHTML="";addLog("INFO","Log cleared.");}
+function updateStats(rl,v){
+  counts.total++;counts[rl]++;
+  document.getElementById("s-total").textContent=counts.total;
+  document.getElementById("s-high").textContent=counts.HIGH;
+  document.getElementById("s-med").textContent=counts.MEDIUM;
+  document.getElementById("s-low").textContent=counts.LOW;
+  document.getElementById("s-last").innerHTML=v==="AI"?"&#x1F916; AI":"&#x1F9D1; Human";
+  document.getElementById("l-h").textContent=counts.HIGH;
+  document.getElementById("l-m").textContent=counts.MEDIUM;
+  document.getElementById("l-l").textContent=counts.LOW;}
+function setThr(v){thr=parseInt(v);document.getElementById("thr-val").textContent=thr+"%";rc.update();}
+function showBan(msg){const b=document.getElementById("risk-banner");b.style.display="flex";document.getElementById("ban-msg").textContent=msg;}
+function dismissBan(){document.getElementById("risk-banner").style.display="none";}
+function dismissOv(){document.getElementById("risk-overlay").classList.add("hidden");streak=0;}
+function blockTx(){addLog("HIGH","TRANSACTION BLOCKED. Incident logged. Call terminated.");dismissBan();dismissOv();stopCall();}
+socket.on("risk_update",function(d){
+  if(d.inconclusive){
+    const b=document.getElementById("risk-badge");
+    b.className="risk-badge WAIT";
+    b.innerHTML="&#x1F507; No Audio &#x2014; Check Mic";
+    addLog("INFO","Silent audio detected ("+d.rms_db+" dB) &#x2014; mic may be muted or gain too low");
+    addPt(0);
+    return;
+  }
+  const{ai_pct,human_pct,verdict,risk_level,identity_score,identity_status,warnings}=d;
+  updateGauge(ai_pct,verdict,risk_level);updateBadge(risk_level);addPt(ai_pct);updateStats(risk_level,verdict);
+  const warm=d.buf_count<d.buf_size;
+  const warmSfx=warm?" [collecting "+d.buf_count+"/"+d.buf_size+"]":"";
+  const lm=verdict==="AI"?"AI voice detected - "+ai_pct+"% ("+risk_level+")"+warmSfx:"Human voice verified - "+human_pct+"%"+warmSfx;
+  addLog(risk_level,lm);
+  if(identity_status==="enrolled"&&identity_score!==null){
+    document.getElementById("id-fill").style.width=identity_score+"%";
+    document.getElementById("id-fill").style.background=identity_score>60?"#22c55e":identity_score>40?"#f59e0b":"#ef4444";
+    document.getElementById("id-score").textContent="Identity Match: "+identity_score+"%";}
+  if(warnings&&warnings.length)warnings.forEach(w=>addLog("INFO","Warning: "+w));
+  if(ai_pct>=thr){streak++;showBan("AI score "+ai_pct+"% exceeds threshold ("+thr+"%). Possible voice cloning.");
+    if(streak>=3)document.getElementById("risk-overlay").classList.remove("hidden");
+  }else{streak=0;dismissBan();}});
+socket.on("enrollment_done",function(d){
+  document.getElementById("enroll-overlay").classList.add("hidden");
+  if(d.status==="ok"){document.getElementById("vp-badge").textContent="Enrolled";
+    document.getElementById("vp-badge").className="vp-badge enrolled";
+    document.getElementById("id-score").textContent="Identity Match: analyzing...";
+    addLog("INFO","Voiceprint enrolled successfully");}
+  else{addLog("INFO","Enrollment failed: "+(d.message||"unknown"));}});
+socket.on("analysis_error",function(d){addLog("INFO","Error: "+d.message);});
+
+let simPlayer = new Audio();
+let simSrc = null;
+let simConnected = false;
+
+async function simulateCall(type) {
+  addLog("INFO", "Loading " + type.toUpperCase() + " payload...");
+
+  // Play audio for audience to hear
+  try { new Audio('/static/' + (type==='ai' ? 'ai_sample.flac' : 'human_sample.m4a')).play(); } catch(e) {}
+
+  // Simulate call UI state
+  if(callActive) { stopCall(); await new Promise(r=>setTimeout(r,100)); }
+  callActive = true;
+  callSecs = 0;
+  if(callTimer) clearInterval(callTimer);
+  callTimer = setInterval(function(){
+    callSecs++;
+    document.getElementById("c-timer").textContent =
+      String(Math.floor(callSecs/60)).padStart(2,"0") + ":" + String(callSecs%60).padStart(2,"0");
+  }, 1000);
+  document.getElementById("sess-info").textContent = "Simulating " + type.toUpperCase() + " VoIP Attack";
+  document.getElementById("call-btn").textContent = "Live Microphone";
+  document.getElementById("call-btn").classList.remove("end");
+
+  // Call server-side analysis (bypasses browser audio routing)
+  try {
+    const resp = await fetch('/simulate/' + type);
+    const d = await resp.json();
+    if(d.error) { addLog("INFO", "Simulation error: " + d.error); stopCall(); return; }
+
+    const ai=d.ai_pct, hu=d.human_pct, verdict=d.verdict, rl=d.risk_level;
+    updateGauge(ai, verdict, rl);
+    updateBadge(rl);
+    addPt(ai);
+    updateStats(rl, verdict);
+    const lm = verdict==="AI" ? "AI voice detected - "+ai+"% ("+rl+")" : "Human voice verified - "+hu+"%";
+    addLog(rl, lm);
+
+    if(ai >= thr) {
+      streak++;
+      showBan("AI score "+ai+"% exceeds threshold ("+thr+"%). Possible voice cloning.");
+      if(streak >= 3) document.getElementById("risk-overlay").classList.remove("hidden");
+    } else {
+      streak = 0;
+      dismissBan();
+    }
+  } catch(e) {
+    addLog("INFO", "Simulation error: " + e.message);
+  }
+
+  setTimeout(()=>{ if(callActive) stopCall(); }, 4000);
+} catch(e) {
+    addLog("INFO", "Simulation error: " + e.message);
+    console.error(e);
+  }
+} catch(e) {
+    addLog("INFO", "Simulation error: " + e.message);
+  }
+}
+
+async function toggleCall(){
+  if(callActive){stopCall();return;}
+  try{micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});}
+  catch(e){addLog("INFO","Mic access denied: "+e.message);return;}
+  callActive=true;
+  document.getElementById("sess-info").textContent="Session started: "+new Date().toLocaleTimeString("en-IN");
+  document.getElementById("call-btn").textContent="End Call";
+  document.getElementById("call-btn").classList.add("end");
+  addLog("INFO","Call started - real-time monitoring active");
+  startMicMeter(micStream);
+  callSecs=0;
+  callTimer=setInterval(function(){callSecs++;
+    const m=String(Math.floor(callSecs/60)).padStart(2,"0");
+    const s=String(callSecs%60).padStart(2,"0");
+    document.getElementById("c-timer").textContent=m+":"+s;},1000);
+  recordChunk();}
+function stopCall(){
+    if(typeof simSrc !== 'undefined' && simSrc && simSrc.stop) { try{ simSrc.stop(); }catch(e){} }
+
+  callActive=false;
+  if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null;}
+  if(callTimer){clearInterval(callTimer);callTimer=null;}
+  document.getElementById("call-btn").textContent="Live Microphone";
+  document.getElementById("call-btn").classList.remove("end");
+  addLog("INFO","Call ended - monitoring stopped");streak=0;dismissBan();stopMicMeter();}
+function recordChunk(){
+    if(!callActive||!micStream)return;
+    try {
+      const chunks=[];
+      const mt=MediaRecorder.isTypeSupported("audio/webm;codecs=opus")?"audio/webm;codecs=opus":"audio/webm";
+      const mr=new MediaRecorder(micStream,{mimeType:mt});
+      mr.ondataavailable=function(e){if(e.data.size>0)chunks.push(e.data);};
+      mr.onstop=async function(){
+        if(chunks.length&&callActive){try{
+          const blob=new Blob(chunks,{type:mt});
+          const buf=await blob.arrayBuffer();
+          socket.emit("audio_chunk",buf);}catch(e){addLog("INFO","Emit err: "+e.message);}}
+        if(callActive)setTimeout(recordChunk,50);};
+      mr.start();
+      setTimeout(function(){try{if(mr.state==="recording")mr.stop();}catch(e){}},5000);
+    } catch(e) {
+      addLog("INFO", "Recorder error: " + e.message);
+      if(callActive) setTimeout(recordChunk, 2000);
+    }
+}
+async function startEnroll(){
+  let es;
+  try{es=await navigator.mediaDevices.getUserMedia({audio:true,video:false});}
+  catch(e){addLog("INFO","Mic access denied");return;}
+  document.getElementById("enroll-overlay").classList.remove("hidden");
+  const DUR=4000,start=Date.now();
+  const pi=setInterval(function(){
+    const pct=Math.min((Date.now()-start)/DUR*100,100);
+    document.getElementById("en-prog").style.width=pct+"%";
+    const rem=Math.max(0,Math.ceil((DUR-(Date.now()-start))/1000));
+    document.getElementById("en-status").textContent="Recording... "+rem+"s remaining";},100);
+  const chunks=[];
+  const mt=MediaRecorder.isTypeSupported("audio/webm;codecs=opus")?"audio/webm;codecs=opus":"audio/webm";
+  const mr=new MediaRecorder(es,{mimeType:mt});
+  mr.ondataavailable=function(e){if(e.data.size>0)chunks.push(e.data);};
+  mr.onstop=async function(){
+    clearInterval(pi);es.getTracks().forEach(t=>t.stop());
+    document.getElementById("en-status").textContent="Processing...";
+    if(chunks.length){const blob=new Blob(chunks,{type:mt});const buf=await blob.arrayBuffer();
+      socket.emit("enroll_voiceprint",buf);}};
+  mr.start();
+  setTimeout(function(){try{mr.stop();}catch(e){}},DUR);}
+let selFiles=[];
+const dz=document.getElementById("drop-zone");
+const fi=document.getElementById("file-input");
+dz.addEventListener("dragover",function(e){e.preventDefault();dz.classList.add("dov");});
+dz.addEventListener("dragleave",function(){dz.classList.remove("dov");});
+dz.addEventListener("drop",function(e){e.preventDefault();dz.classList.remove("dov");addFiles([...e.dataTransfer.files]);});
+fi.addEventListener("change",function(){addFiles([...fi.files]);fi.value="";});
+function addFiles(fs){fs.forEach(function(f){if(!selFiles.find(x=>x.name===f.name&&x.size===f.size))selFiles.push(f);});renderFL();}
+function renderFL(){const el=document.getElementById("file-list");el.innerHTML="";
+  selFiles.forEach(function(f,i){const d=document.createElement("div");d.className="fchip";
+    d.innerHTML="<span>&#x1F3A4;</span><span class=\"nm\" title=\""+f.name+"\">"+f.name+"</span><span class=\"rm\" data-i=\""+i+"\">&#x2715;</span>";
+    el.appendChild(d);});
+  el.querySelectorAll(".rm").forEach(function(b){b.addEventListener("click",function(){selFiles.splice(+b.dataset.i,1);renderFL();});});
+  document.getElementById("upload-btn").disabled=selFiles.length===0;}
+async function doUpload(){if(!selFiles.length)return;
+  const btn=document.getElementById("upload-btn");
+  btn.disabled=true;btn.textContent="Analyzing...";
+  const re=document.getElementById("file-results");
+  re.innerHTML="<div style=\"color:var(--t3);text-align:center;padding:18px\">Analyzing audio files...</div>";
+  const fd=new FormData();selFiles.forEach(function(f){fd.append("audio",f);});
+  try{const res=await fetch("/predict",{method:"POST",body:fd});
+    const data=await res.json();re.innerHTML="";
+    (data.results||[]).forEach(function(r){const div=document.createElement("div");
+      if(r.error){div.className="fres";div.style.borderColor="#f59e0b";
+        div.innerHTML="<div class=\"fres-hdr\"><span class=\"fres-name\">"+r.filename+"</span></div><div style=\"color:#f59e0b\">"+r.error+"</div>";
+      }else{const ih=r.verdict==="Human";div.className="fres "+(ih?"human":"ai");
+        const wh=(r.warnings||[]).map(function(w){return "<div class=\"fwarn\">"+w+"</div>";}).join("");
+        div.innerHTML="<div class=\"fres-hdr\"><span class=\"fres-name\">"+r.filename+"</span><span class=\"fvb "+(ih?"human":"ai")+"\"> "+(ih?"Human":"AI")+"</span></div>"
+          +"<div class=\"fbar-r\"><label>Human <span>"+r.human_pct+"%</span></label><div class=\"btrack\"><div class=\"bfill human\" style=\"width:0%\"></div></div></div>"
+          +"<div class=\"fbar-r\" style=\"margin-top:8px\"><label>AI-Gen <span>"+r.ai_pct+"%</span></label><div class=\"btrack\"><div class=\"bfill ai\" style=\"width:0%\"></div></div></div>"+wh;
+        re.appendChild(div);
+        requestAnimationFrame(function(){setTimeout(function(){div.querySelector(".bfill.human").style.width=r.human_pct+"%";div.querySelector(".bfill.ai").style.width=r.ai_pct+"%";},50);});
+        return;}
+      re.appendChild(div);});}
+  catch(e){re.innerHTML="<div style=\"color:#ef4444;padding:14px\">Error: "+e.message+"</div>";}
+  finally{btn.disabled=false;btn.textContent="Analyze Files";}}
+</script>
+</body>
+</html>

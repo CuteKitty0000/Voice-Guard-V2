@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>VoiceGuard - AI Audio Detector</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        /* OCD-Level Dense Design System */
+        :root {
+            --bg-base: #050505; --bg-panel: #0a0a0a; --bg-surface: #111111;
+            --border-subtle: #1f1f22; --border-hover: #333338;
+            --text-main: #ededed; --text-muted: #888888; --text-dim: #555555;
+            --accent: #2563eb; --accent-dim: rgba(37,99,235,0.1);
+            --danger: #e11d48; --danger-dim: rgba(225,29,72,0.1);
+            --success: #10b981; --success-dim: rgba(16,185,129,0.1);
+            --warning: #f59e0b;
+            --font-sans: 'Inter', sans-serif; --font-mono: 'JetBrains Mono', monospace;
+            --sp-1: 4px; --sp-2: 8px; --sp-3: 16px; --sp-4: 24px;
+            --rad-sm: 4px; --rad-md: 6px; --rad-lg: 8px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg-base); color: var(--text-main); font-family: var(--font-sans); font-size: 13px; -webkit-font-smoothing: antialiased; }
+        
+        /* HEADER */
+        header { 
+            position: sticky; top: 0; z-index: 100; background: var(--bg-panel); 
+            border-bottom: 1px solid var(--border-subtle); padding: 0 24px; height: 48px;
+            display: flex; justify-content: space-between; align-items: center; 
+        }
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .brand h1 { font-family: var(--font-mono); font-size: 13px; font-weight: 700; letter-spacing: 1px; color: var(--text-main); }
+        .version { font-family: var(--font-mono); font-size: 9px; color: var(--accent); background: var(--accent-dim); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(37,99,235,0.3); }
+
+        .nav-tabs { display: flex; gap: 4px; }
+        .tab { 
+            padding: 4px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; 
+            cursor: pointer; border: 1px solid transparent; background: transparent; color: var(--text-muted); 
+            display: flex; align-items: center; gap: 6px; transition: 0.2s;
+        }
+        .tab.active { background: var(--bg-surface); color: var(--text-main); border-color: var(--border-subtle); }
+
+        main { padding: var(--sp-4); max-width: 1600px; margin: 0 auto; display: none; }
+        main.active { display: block; animation: fadeIn 0.2s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* COMPONENTS */
+        .panel { background: var(--bg-panel); border: 1px solid var(--border-subtle); border-radius: var(--rad-lg); padding: var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-3); min-height: 0; }
+        .panel-header { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .panel-header i { width: 14px; height: 14px; }
+
+        .btn { 
+            width: 100%; padding: 10px; background: var(--text-main); color: var(--bg-base); 
+            border: none; border-radius: var(--rad-md); font-size: 12px; font-weight: 600; 
+            cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; transition: 0.2s;
+        }
+        .btn:hover { background: #fff; }
+        .btn.danger { background: var(--danger); color: white; }
+        .btn-ghost { flex: 1; background: var(--bg-surface); border: 1px solid var(--border-subtle); color: var(--text-muted); padding: 8px; border-radius: var(--rad-md); font-size: 11px; font-weight: 600; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px; }
+        .btn-ghost:hover { border-color: var(--text-muted); color: var(--text-main); }
+
+        /* LIVE DASHBOARD GRID */
+        .live-grid { display: grid; grid-template-columns: 260px 1fr 340px; gap: var(--sp-3); align-items: stretch; height: calc(100vh - 100px); }
+        
+        /* Stats / Telemetry */
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
+        .stat-box { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--rad-md); padding: var(--sp-2); }
+        .stat-val { font-family: var(--font-mono); font-size: 16px; font-weight: 700; color: var(--text-main); margin-bottom: 2px; }
+        .stat-lbl { font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+        
+        .feat-list { display: flex; flex-direction: column; gap: 6px; }
+        .feat-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid var(--border-subtle); }
+        .feat-row:last-child { border: none; }
+        .feat-row .lbl { font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+        .feat-row .val { font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--accent); }
+
+        /* Center Visuals */
+        .viz-stack { display: flex; flex-direction: column; gap: var(--sp-3); flex: 1; min-height: 0; }
+        .canvas-wrap { flex: 1; background: #000; border: 1px solid var(--border-subtle); border-radius: var(--rad-md); position: relative; overflow: hidden; min-height: 0; }
+        .canvas-wrap canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        
+        /* Right Side: Gauges & Agent */
+        .gauges-container { display: flex; gap: var(--sp-2); }
+        .gauge-wrapper { flex: 1; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--rad-md); padding: var(--sp-2); display: flex; flex-direction: column; align-items: center; position: relative; }
+        .gauge-svg { width: 120px; height: 120px; transform: rotate(-90deg); }
+        .gauge-bg { fill: none; stroke: var(--bg-panel); stroke-width: 10; }
+        .gauge-fg { fill: none; stroke-width: 10; stroke-dasharray: 314; stroke-dashoffset: 314; stroke-linecap: round; transition: 0.4s; }
+        .gauge-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; }
+        .gauge-val { font-family: var(--font-mono); font-size: 20px; font-weight: 700; line-height: 1; }
+        .gauge-lbl { font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-top: 4px; }
+
+        .terminal { background: #000; border: 1px solid var(--border-subtle); border-radius: var(--rad-md); flex: 1; min-height: 0; overflow-y: auto; padding: var(--sp-2); font-family: var(--font-mono); font-size: 11px; display: flex; flex-direction: column; gap: 8px; }
+        .log-entry { line-height: 1.5; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .log-entry:last-child { border: none; padding: 0; }
+        .log-ts { color: var(--text-dim); margin-right: 8px; }
+        .log-msg { color: var(--text-muted); }
+        .log-entry.agent .log-msg { color: var(--accent); }
+        .log-entry.high .log-msg { color: var(--danger); font-weight: 600; }
+        .log-entry.low .log-msg { color: var(--success); }
+
+        /* FILE ANALYSIS TAB */
+        .dropzone { border: 1px dashed var(--border-subtle); border-radius: var(--rad-lg); padding: 40px; text-align: center; cursor: pointer; transition: 0.2s; background: var(--bg-surface); }
+        .dropzone:hover { border-color: var(--accent); background: var(--accent-dim); }
+        .file-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--sp-2); }
+        .file-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--rad-md); font-family: var(--font-mono); font-size: 11px; }
+
+        .result-card { background: var(--bg-panel); border: 1px solid var(--border-subtle); border-radius: var(--rad-lg); margin-top: var(--sp-4); overflow: hidden; }
+        .card-header { padding: 12px 24px; background: var(--bg-surface); border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; }
+        .card-filename { font-family: var(--font-mono); font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+        
+        .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); padding: 24px; }
+        .card-left { display: flex; flex-direction: column; gap: var(--sp-4); }
+        .card-right { display: flex; flex-direction: column; gap: var(--sp-3); }
+
+        .score-bars { display: flex; flex-direction: column; gap: var(--sp-3); }
+        .score-row { display: flex; flex-direction: column; gap: 6px; }
+        .score-top { display: flex; justify-content: space-between; align-items: flex-end; }
+        .score-lbl { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+        .score-val { font-family: var(--font-mono); font-size: 16px; font-weight: 700; line-height: 1; }
+        .track { height: 4px; background: #000; border-radius: 2px; overflow: hidden; }
+        .bar { height: 100%; border-radius: 2px; }
+
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="brand">
+        <i data-lucide="shield-check" style="color:var(--accent);"></i>
+        <h1>VOICEGUARD ENGINE</h1>
+        <div class="version">V4.0 // HYPER-DENSE</div>
+    </div>
+    <nav class="nav-tabs">
+        <button class="tab active" onclick="switchTab('live')"><i data-lucide="radio"></i> STREAM</button>
+        <button class="tab" onclick="switchTab('file')"><i data-lucide="database"></i> BATCH</button>
+    </nav>
+</header>
+
+<!-- LIVE STREAM TAB -->
+<main id="tab-live" class="active">
+    <div class="live-grid">
+        
+        <!-- COL 1: CONTROLS & TELEMETRY -->
+        <aside class="panel">
+            <div class="panel-header"><i data-lucide="sliders"></i> Operations</div>
+            <button id="btn-mic" class="btn" onclick="toggleMic()"><i data-lucide="mic"></i> <span>START MIC STREAM</span></button>
+            <div style="display:flex; gap:8px;">
+                <button class="btn-ghost" onclick="simulatePayload('ai')"><i data-lucide="bot"></i> INJECT AI</button>
+                <button class="btn-ghost" onclick="simulatePayload('human')"><i data-lucide="user"></i> INJECT HU</button>
+            </div>
+            
+            <div class="panel-header" style="margin-top:16px;"><i data-lucide="activity"></i> Telemetry</div>
+            <div class="stat-grid">
+                <div class="stat-box"><div class="stat-val" id="st-time">00:00</div><div class="stat-lbl">Time</div></div>
+                <div class="stat-box"><div class="stat-val" id="st-chunks">0</div><div class="stat-lbl">Chunks</div></div>
+            </div>
+            
+            <div class="feat-list" style="margin-top:8px;">
+                <div class="feat-row"><span class="lbl">RMS Energy</span><span class="val" id="rt-rms">-- dB</span></div>
+                <div class="feat-row"><span class="lbl">Centroid</span><span class="val" id="rt-cent">-- Hz</span></div>
+                <div class="feat-row"><span class="lbl">Spread</span><span class="val" id="rt-sprd">-- Hz</span></div>
+                <div class="feat-row"><span class="lbl">Silence Ratio</span><span class="val" id="rt-sil">-- %</span></div>
+                <div class="feat-row"><span class="lbl">MFCC 1</span><span class="val" id="rt-mfcc">--</span></div>
+            </div>
+        </aside>
+
+        <!-- COL 2: LIVE VISUALS -->
+        <section class="panel">
+            <div class="panel-header" style="justify-content:space-between;">
+                <div style="display:flex; align-items:center; gap:8px;"><i data-lucide="waveform"></i> Spectral Visualizer</div>
+                <div style="font-family:var(--font-mono); font-size:9px; color:var(--accent);">REAL-TIME RENDERING</div>
+            </div>
+            <div class="viz-stack">
+                <div style="display:flex; flex-direction:column; flex:1; gap:8px;">
+                    <div style="font-size:10px; color:var(--text-muted); font-weight:700;">DOWNSAMPLED WAVEFORM</div>
+                    <div class="canvas-wrap"><canvas id="live-wv"></canvas></div>
+                </div>
+                <div style="display:flex; flex-direction:column; flex:1; gap:8px;">
+                    <div style="font-size:10px; color:var(--text-muted); font-weight:700;">MEL SPECTROGRAM (INFERNO)</div>
+                    <div class="canvas-wrap"><canvas id="live-mel" style="image-rendering:pixelated;"></canvas></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- COL 3: AGENT & GAUGES -->
+        <aside class="panel">
+            <div class="panel-header"><i data-lucide="cpu"></i> Inference Engine</div>
+            <div class="gauges-container">
+                <div class="gauge-wrapper">
+                    <svg class="gauge-svg"><circle class="gauge-bg" cx="60" cy="60" r="50"/><circle id="g-ai" class="gauge-fg" cx="60" cy="60" r="50" style="stroke:var(--danger);"/></svg>
+                    <div class="gauge-text"><div class="gauge-val" style="color:var(--danger);"><span id="v-ai">0.0</span>%</div><div class="gauge-lbl">SYNTHESIS</div></div>
+                </div>
+                <div class="gauge-wrapper">
+                    <svg class="gauge-svg"><circle class="gauge-bg" cx="60" cy="60" r="50"/><circle id="g-hu" class="gauge-fg" cx="60" cy="60" r="50" style="stroke:var(--success);"/></svg>
+                    <div class="gauge-text"><div class="gauge-val" style="color:var(--success);"><span id="v-hu">0.0</span>%</div><div class="gauge-lbl">HUMAN</div></div>
+                </div>
+            </div>
+
+            <div class="panel-header" style="margin-top:16px;"><i data-lucide="terminal"></i> AI Copilot Log</div>
+            <div class="terminal" id="inf-log">
+                <div class="log-entry info"><span class="log-ts">[00:00:00]</span><span class="log-msg">System initialized. Awaiting audio stream...</span></div>
+            </div>
+        </aside>
+
+    </div>
+</main>
+
+<!-- FILE ANALYSIS TAB -->
+<main id="tab-file">
+    <div class="panel" style="max-width: 1000px; margin: 0 auto;">
+        <div class="panel-header"><i data-lucide="upload-cloud"></i> Data Ingestion</div>
+        
+        <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
+            <i data-lucide="file-audio-2" style="width:32px; height:32px; color:var(--text-muted); margin-bottom:12px;"></i>
+            <div style="font-weight:700; font-size:14px;">SELECT OR DROP AUDIO FILES</div>
+            <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">WAV, FLAC, M4A, MP3</div>
+            <input type="file" id="file-input" multiple accept=".wav,.flac,.mp3,.m4a,.ogg,.aac,.webm" style="display:none;" onchange="handleFileSelect(event)">
+        </div>
+        
+        <div class="file-list" id="file-list"></div>
+        <button class="btn" id="btn-analyze" onclick="runAnalysis()"><i data-lucide="play"></i> <span>START BATCH ANALYSIS</span></button>
+    </div>
+
+    <div id="results-container" style="max-width: 1000px; margin: 0 auto;"></div>
+</main>
+
+<script src="/static/socket.io.min.js"></script>
+<script>
+lucide.createIcons();
+const CIRC = 314; // 2 * pi * 50
+const appState = { files: [], micStream: null, mediaRecorder: null, isRecording: false, timer: null, seconds: 0, chunks: 0, socket: null };
+try { appState.socket = io(); } catch(e) { console.error('Socket.io error', e); }
+
+function switchTab(tabId) {
+    document.querySelectorAll('.tab, main').forEach(el => el.classList.remove('active'));
+    document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
+    document.getElementById('tab-' + tabId).classList.add('active');
+}
+
+function addLog(msg, level="info") {
+    const box = document.getElementById("inf-log");
+    const d = new Date();
+    const ts = `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}:${d.getSeconds().toString().padStart(2,'0')}`;
+    const entry = document.createElement("div");
+    entry.className = `log-entry ${level}`;
+    entry.innerHTML = `<span class="log-ts">[${ts}]</span><span class="log-msg">${msg}</span>`;
+    box.appendChild(entry);
+    box.scrollTop = box.scrollHeight; // Auto-scroll to bottom
+}
+
+// -----------------------------------------------------------------------------
+// LIVE STREAM LOGIC
+// -----------------------------------------------------------------------------
+async function toggleMic() {
+    const btn = document.getElementById("btn-mic");
+    const span = btn.querySelector('span');
+    
+    if (appState.isRecording) {
+        appState.isRecording = false;
+        if(appState.mediaRecorder) appState.mediaRecorder.stop();
+        if(appState.micStream) appState.micStream.getTracks().forEach(t => t.stop());
+        clearInterval(appState.timer);
+        span.textContent = "START MIC STREAM";
+        btn.classList.remove("danger");
+        addLog("Microphone stream terminated.", "info");
+        return;
+    }
+
+    try {
+        appState.micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        if (appState.socket) appState.socket.emit("reset_stream");
+        appState.mediaRecorder = new MediaRecorder(appState.micStream, { mimeType: 'audio/webm' });
+        appState.mediaRecorder.ondataavailable = e => { if (e.data.size > 0 && appState.isRecording) if (appState.socket) appState.socket.emit("audio_chunk", e.data); };
+        appState.mediaRecorder.start(1000);
+        
+        appState.isRecording = true; appState.seconds = 0; appState.chunks = 0;
+        appState.timer = setInterval(() => {
+            appState.seconds++;
+            document.getElementById("st-time").textContent = `${String(Math.floor(appState.seconds/60)).padStart(2,'0')}:${String(appState.seconds%60).padStart(2,'0')}`;
+        }, 1000);
+
+        span.textContent = "STOP STREAM"; btn.classList.add("danger");
+        addLog("Mic active. Listening...", "info");
+    } catch(err) {
+        addLog(`Mic Error: ${err.message}`, "high");
+    }
+}
+
+if (appState.socket) appState.socket.on("analysis_error", (data) => addLog(`Server Error: ${data.error}`, "high"));
+
+if (appState.socket) appState.socket.on("risk_update", (data) => {
+    if (data.error) { addLog(data.error, "high"); return; }
+    
+    appState.chunks = data.buf_count;
+    document.getElementById("st-chunks").textContent = appState.chunks;
+    
+    // Gauges
+    document.getElementById("g-ai").style.strokeDashoffset = CIRC - (data.ai_pct/100)*CIRC;
+    document.getElementById("v-ai").textContent = data.ai_pct.toFixed(1);
+    document.getElementById("g-hu").style.strokeDashoffset = CIRC - (data.human_pct/100)*CIRC;
+    document.getElementById("v-hu").textContent = data.human_pct.toFixed(1);
+
+    // Features
+    if (data.features) {
+        document.getElementById("rt-rms").textContent = data.features.rms_db.toFixed(1) + " dB";
+        document.getElementById("rt-cent").textContent = data.features.spectral_centroid_hz.toFixed(0) + " Hz";
+        document.getElementById("rt-sprd").textContent = data.features.spectral_spread_hz.toFixed(0) + " Hz";
+        document.getElementById("rt-sil").textContent = (data.features.silence_ratio*100).toFixed(1) + " %";
+        document.getElementById("rt-mfcc").textContent = data.features.mfcc_mean[0].toFixed(2);
+        
+
+    }
+
+    // Visuals
+    if (data.waveform) renderWaveform(document.getElementById("live-wv"), data.waveform);
+    if (data.mel) renderMel(document.getElementById("live-mel"), data.mel);
+
+    const msg = data.verdict === "AI" ? `[ALERT] Synthesis Detected (${data.ai_pct}%)` : `[OK] Human Voice (${data.human_pct}%)`;
+    addLog(msg, data.risk_level === "HIGH" ? "high" : "low");
+});
+
+async function simulatePayload(type) {
+    addLog(`Injecting ${type.toUpperCase()} payload...`, "info");
+    try { new Audio(type === 'ai' ? '/static/ai_sample.flac' : '/static/human_sample.m4a').play(); } catch(e) {}
+    try {
+        const resp = await fetch('/simulate/' + type);
+        const data = await resp.json();
+        if (data.error) throw new Error(data.error);
+        
+        appState.chunks++; document.getElementById("st-chunks").textContent = appState.chunks;
+        
+        document.getElementById("g-ai").style.strokeDashoffset = CIRC - (data.ai_pct/100)*CIRC;
+        document.getElementById("v-ai").textContent = data.ai_pct.toFixed(1);
+        document.getElementById("g-hu").style.strokeDashoffset = CIRC - (data.human_pct/100)*CIRC;
+        document.getElementById("v-hu").textContent = data.human_pct.toFixed(1);
+
+        if (data.features) {
+            document.getElementById("rt-rms").textContent = data.features.rms_db.toFixed(1) + " dB";
+            document.getElementById("rt-cent").textContent = data.features.spectral_centroid_hz.toFixed(0) + " Hz";
+            document.getElementById("rt-sprd").textContent = data.features.spectral_spread_hz.toFixed(0) + " Hz";
+            document.getElementById("rt-sil").textContent = (data.features.silence_ratio*100).toFixed(1) + " %";
+            document.getElementById("rt-mfcc").textContent = data.features.mfcc_mean[0].toFixed(2);
+        }
+        
+        addLog(`Simulation Complete: ${data.verdict}`, data.risk_level === "HIGH" ? "high" : "low");
+    } catch(err) {
+        addLog(`Sim Error: ${err.message}`, "high");
+    }
+}
+
+// -----------------------------------------------------------------------------
+// FILE ANALYSIS LOGIC
+// -----------------------------------------------------------------------------
+const dz = document.getElementById("dropzone");
+dz.ondragover = (e) => { e.preventDefault(); dz.style.borderColor = "var(--accent)"; }
+dz.ondragleave = (e) => { e.preventDefault(); dz.style.borderColor = "var(--border-subtle)"; }
+dz.ondrop = (e) => { e.preventDefault(); dz.style.borderColor = "var(--border-subtle)"; Array.from(e.dataTransfer.files).forEach(f => appState.files.push(f)); renderFileList(); }
+function handleFileSelect(e) { Array.from(e.target.files).forEach(f => appState.files.push(f)); renderFileList(); }
+function removeFile(idx) { appState.files.splice(idx, 1); renderFileList(); }
+
+function renderFileList() {
+    const list = document.getElementById("file-list");
+    list.innerHTML = appState.files.map((f, i) => `
+        <div class="file-item"><span>${f.name}</span><button class="btn-ghost" style="padding:4px;" onclick="removeFile(${i})"><i data-lucide="x" style="width:12px;height:12px;"></i></button></div>
+    `).join("");
+    lucide.createIcons();
+}
+
+async function runAnalysis() {
+    if (!appState.files.length) return;
+    const btn = document.getElementById("btn-analyze");
+    const container = document.getElementById("results-container");
+    
+    btn.innerHTML = `<i data-lucide="loader" class="lucide-spin"></i> <span>PROCESSING...</span>`; lucide.createIcons();
+    btn.disabled = true; container.innerHTML = "";
+
+    const fd = new FormData(); appState.files.forEach(f => fd.append("audio", f));
+
+    try {
+        const resp = await fetch("/predict", { method: "POST", body: fd });
+        const data = await resp.json();
+
+        data.results.forEach((r, idx) => {
+            if (r.error) {
+                container.innerHTML += `<div class="result-card" style="border-color:var(--danger);"><div class="card-header"><span class="card-filename">${r.filename}</span><span class="badge" style="background:var(--danger-dim);color:var(--danger);">ERROR</span></div><div style="padding:24px;color:var(--danger);font-family:var(--font-mono);">${r.error}</div></div>`;
+                return;
+            }
+            
+            const uid = `c_${Date.now()}_${idx}`;
+            const isAI = r.verdict === "AI";
+            const color = isAI ? "var(--danger)" : "var(--success)";
+            const colorDim = isAI ? "var(--danger-dim)" : "var(--success-dim)";
+            
+            const cardHTML = `
+                <div class="result-card" style="border-color:${colorDim};">
+                    <div class="card-header">
+                        <span class="card-filename"><i data-lucide="file-audio"></i> ${r.filename}</span>
+                        <span class="badge" style="background:${colorDim}; color:${color};">${isAI ? 'AI SYNTHESIS' : 'HUMAN VOICE'}</span>
+                    </div>
+                    <div class="card-grid">
+                        
+                        <div class="card-left">
+                            <div class="score-bars">
+                                <div class="score-row"><div class="score-top"><span class="score-lbl">AI Probability</span><span class="score-val" style="color:var(--danger);">${r.ai_pct.toFixed(1)}%</span></div><div class="track"><div class="bar" style="width:${r.ai_pct}%;background:var(--danger);"></div></div></div>
+                                <div class="score-row"><div class="score-top"><span class="score-lbl">Human Probability</span><span class="score-val" style="color:var(--success);">${r.human_pct.toFixed(1)}%</span></div><div class="track"><div class="bar" style="width:${r.human_pct}%;background:var(--success);"></div></div></div>
+                            </div>
+                            
+
+                        </div>
+
+                        <div class="card-right">
+                            <div style="display:flex; flex-direction:column; gap:8px;">
+                                <div style="font-size:10px; color:var(--text-muted); font-weight:700;">WAVEFORM</div>
+                                <div class="canvas-wrap" style="height:60px; min-height:60px;"><canvas id="${uid}-wv"></canvas></div>
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:8px;">
+                                <div style="font-size:10px; color:var(--text-muted); font-weight:700;">MEL SPECTROGRAM</div>
+                                <div class="canvas-wrap" style="height:80px; min-height:80px;"><canvas id="${uid}-mel" style="image-rendering:pixelated;"></canvas></div>
+                            </div>
+                            
+                            ${r.features ? `
+                                <div class="stat-grid" style="grid-template-columns: repeat(3, 1fr); margin-top:8px;">
+                                    <div class="stat-box"><div class="stat-val" style="font-size:14px;">${r.features.duration_sec}s</div><div class="stat-lbl">Duration</div></div>
+                                    <div class="stat-box"><div class="stat-val" style="font-size:14px;">${r.features.rms_db} dB</div><div class="stat-lbl">RMS Energy</div></div>
+                                    <div class="stat-box"><div class="stat-val" style="font-size:14px;">${r.features.spectral_centroid_hz}</div><div class="stat-lbl">Centroid Hz</div></div>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                    </div>
+                </div>
+            `;
+            
+            const div = document.createElement('div');
+            div.innerHTML = cardHTML;
+            container.appendChild(div);
+
+            setTimeout(() => {
+                if (r.waveform) renderWaveform(document.getElementById(`${uid}-wv`), r.waveform);
+                if (r.mel) renderMel(document.getElementById(`${uid}-mel`), r.mel);
+                lucide.createIcons();
+            }, 50);
+        });
+
+        appState.files = []; renderFileList();
+    } catch(err) {
+        container.innerHTML = `<div class="panel" style="color:var(--danger);">Request failed: ${err.message}</div>`;
+    } finally {
+        btn.innerHTML = `<i data-lucide="play"></i> <span>START BATCH ANALYSIS</span>`; lucide.createIcons(); btn.disabled = false;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// CANVAS RENDERERS
+// -----------------------------------------------------------------------------
+function renderWaveform(canvas, data) {
+    if (!canvas || !data || !data.length) return;
+    const parent = canvas.parentElement;
+    const w = parent.clientWidth || 300, h = parent.clientHeight || 80, dpr = window.devicePixelRatio || 1;
+    
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    const ctx = canvas.getContext("2d");
+    ctx.scale(dpr, dpr); ctx.clearRect(0, 0, w, h);
+    
+    const mid = h / 2, step = data.length / w;
+    ctx.beginPath(); ctx.moveTo(0, mid); ctx.lineTo(w, mid);
+    ctx.strokeStyle = "rgba(255,255,255,0.1)"; ctx.lineWidth = 1; ctx.stroke();
+
+    ctx.beginPath(); ctx.strokeStyle = "#2563eb"; ctx.lineWidth = 1.5;
+    for (let x = 0; x < w; x++) {
+        const y = mid - (data[Math.floor(x * step)] * mid * 0.9);
+        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+}
+
+function renderMel(canvas, mel) {
+    if (!canvas || !mel || !mel.data) return;
+    const { cols, rows, data } = mel;
+    canvas.width = cols; canvas.height = rows;
+    
+    const ctx = canvas.getContext("2d");
+    const img = ctx.createImageData(cols, rows);
+    
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            const val = data[(rows - 1 - r) * cols + c];
+            let R, G, B;
+            if (val < 0.25) { const t = val / 0.25; R = Math.round(20 + t * 80); G = 0; B = Math.round(30 + t * 100); }
+            else if (val < 0.5) { const t = (val - 0.25) / 0.25; R = Math.round(100 + t * 120); G = Math.round(t * 20); B = Math.round(130 - t * 100); }
+            else if (val < 0.75) { const t = (val - 0.5) / 0.25; R = Math.round(220 + t * 35); G = Math.round(20 + t * 80); B = Math.round(30 - t * 20); }
+            else { const t = (val - 0.75) / 0.25; R = 255; G = Math.round(100 + t * 155); B = Math.round(10 + t * 40); }
+            const i = (r * cols + c) * 4;
+            img.data[i] = R; img.data[i+1] = G; img.data[i+2] = B; img.data[i+3] = 255;
+        }
+    }
+    ctx.putImageData(img, 0, 0);
+}
+</script>
+</body>
+</html>
