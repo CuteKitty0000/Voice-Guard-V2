@@ -55,12 +55,12 @@ The application features a dark, cyber-security-themed interface designed for de
 - **Batch Tab:** Drag-and-drop file ingestion, individual probability tracks, and AI-generated profiling reports.
 
 ## 🤝 Team MicroStar
-- Team Member 1
-- Team Member 2
-- Team Member 3
-- Team Member 4
-- Team Member 5
-- Team Member 6
+Navaneetha krishnan 
+RAKSHITA
+PREETHIKA 
+NANDESH
+SHIFANI 
+Santhiya
 
 ---
 *Built with ❤️ for Smart India Hackathon 2026*
