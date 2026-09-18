@@ -1,0 +1,66 @@
+# VoiceGuard Engine - Smart India Hackathon 2026 🏆
+
+**Team Name:** MicroStar  
+**Project:** Real-Time Deepfake Audio Detection System  
+
+## 🌟 Overview
+VoiceGuard Engine is an advanced, hyper-dense cybersecurity tool designed to detect AI-generated voice synthesis and audio deepfakes in real-time. Built for the **Smart India Hackathon 2026**, it features live microphone stream processing, telemetry extraction, and a deep AI profiling system using Large Language Models to explain *why* an audio clip is flagged.
+
+## ✨ Key Features
+- **Live Real-Time Detection:** Stream microphone input and analyze it chunk-by-chunk for AI synthesis.
+- **Batch Data Ingestion:** Upload multiple audio files (`.wav`, `.flac`, `.m4a`, `.mp3`) for automated batch processing.
+- **Advanced Telemetry:** Extracts crucial acoustic features in real-time including RMS Energy, Spectral Centroid, Spectral Spread, Silence Ratio, and MFCCs.
+- **Live Visualizers:** Renders downsampled waveforms and Mel Spectrograms (Inferno) directly in the browser via HTML5 Canvas.
+- **Deep AI Profiling:** Integrates with OpenRouter LLMs (GPT-4o-mini) to generate highly technical, dense markdown reports analyzing Vocal Tract, Pitch, and Spectral Artifacts. Includes a built-in API key cycler for seamless failover!
+
+## 🚀 Technology Stack
+- **Backend:** Python, Flask, Flask-SocketIO
+- **Audio Processing:** Librosa, NumPy, FFmpeg
+- **Machine Learning:** ONNX Runtime / Keras
+- **Frontend:** HTML5, Vanilla JavaScript, CSS3, Socket.io, Lucide Icons
+- **LLM Integration:** OpenAI SDK via OpenRouter API
+
+## 🛠️ Installation & Setup
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/yourusername/Voice-Guard-V2.git
+   cd Voice-Guard-V2
+   ```
+
+2. **Install dependencies:**
+   Make sure you have Python 3.9+ installed. You also need to install **FFmpeg** on your system and add it to your system PATH.
+   ```bash
+   pip install flask flask-socketio numpy librosa onnxruntime openai python-dotenv
+   ```
+
+3. **Configure Environment Variables:**
+   Create a `.env` file in the root directory for OpenRouter API access (optional, required for Deep AI Profiling):
+   ```env
+   OPENROUTER_API_KEY=sk-or-v1-...
+   ```
+
+4. **Model Setup:**
+   Ensure the necessary trained model file is present in the `model/` directory (e.g., `dhwani_model_fast.onnx`).
+
+5. **Run the Application:**
+   ```bash
+   python app.py
+   ```
+   The dashboard will be automatically available at `http://localhost:5000`.
+
+## 📸 Dashboard Interface
+The application features a dark, cyber-security-themed interface designed for dense information tracking:
+- **Stream Tab:** Real-time gauges for Human/Synthesis probability, AI Copilot logs, and live streaming spectral visualizers.
+- **Batch Tab:** Drag-and-drop file ingestion, individual probability tracks, and AI-generated profiling reports.
+
+## 🤝 Team MicroStar
+- Team Member 1
+- Team Member 2
+- Team Member 3
+- Team Member 4
+- Team Member 5
+- Team Member 6
+
+---
+*Built with ❤️ for Smart India Hackathon 2026*
